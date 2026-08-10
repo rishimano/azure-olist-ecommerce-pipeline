@@ -15,6 +15,12 @@ The goal of this project was to build a practical data pipeline covering data in
 - Automated the pipeline with Azure Data Factory
 - Built Power BI dashboards for sales, products, and delivery
 
+  ## Power BI File
+
+The Power BI dashboard file is available in the repository:
+
+[Open Power BI Project](power%20bi/olist_ecommerce_azure_dashboard.pbix)
+
 ## Architecture
 ```mermaid
 flowchart TD
