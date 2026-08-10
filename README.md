@@ -7,17 +7,22 @@ This project demonstrates an end-to-end cloud data engineering and analytics pip
 The goal of this project was to build a practical data pipeline covering data ingestion, transformation, orchestration, SQL loading, and business reporting.
 
 ## Architecture
-
-
 ```mermaid
-flowchart LR
-    A[Olist CSV Dataset] --> B[Azure Data Lake Storage Gen2 - Raw]
-    B --> C[Azure Data Factory]
-    C --> D[Azure Databricks]
-    D --> E[PySpark Data Transformation]
-    E --> F[ADLS Gen2 - Curated Parquet]
-    F --> G[Azure SQL Database]
-    G --> H[Power BI Dashboard]
+flowchart TD
+    A["Olist CSV Data"]
+    B["ADLS Gen2<br/>Raw Data"]
+    C["Azure Data Factory<br/>Run Pipeline"]
+    D["Azure Databricks<br/>PySpark Cleaning"]
+    E["ADLS Gen2<br/>Curated Data"]
+    F["Azure SQL Database"]
+    G["Power BI Dashboard"]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
 ```
 
 ## Tools and Technologies
