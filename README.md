@@ -78,41 +78,41 @@ Includes KPIs and sales trends:
 - Monthly Revenue
 - Revenue by Customer State
 
-![Sales Overview](screenshots/01_sales_overview_dashboard.png)
+![Sales Overview](screenshots/01%20Sales%20Overview.png)
 
 ### Product Analysis
 
 Shows product category performance using revenue, orders, and average item value.
 
-![Product Analysis](screenshots/02_product_analysis_dashboard.png)
+![Product Analysis](screenshots/02%20Product%20Analysis.png)
 
 ### Delivery Analysis
 
 Shows average delivery days and order volume by customer state.
 
-![Delivery Analysis](screenshots/03_delivery_analysis_dashboard.png)
+![Delivery Analysis](screenshots/03%20Delivery%20Analysis.png)
 
 ## Azure Pipeline Evidence
 
 ### Raw Data in ADLS Gen2
 
-![Raw Container Files](screenshots/04_raw_container_files.png)
+![Raw Container Files](screenshots/04_raw_container_files.png.png)
 
 ### Curated Outputs in ADLS Gen2
 
-![Curated Container Outputs](screenshots/05_curated_container_outputs.png)
+![Curated Container Outputs](screenshots/05_curated_container_outputs.png.png)
 
 ### Databricks Transformation
 
-![Databricks Transformation Notebook](screenshots/06_databricks_transformation_notebook.png)
+![Databricks Transformation Notebook](screenshots/06_databricks_transformation_notebook.png.png)
 
 ### Azure SQL Table Verification
 
-![Azure SQL Tables Verified](screenshots/07_azure_sql_tables_verified.png)
+![Azure SQL Tables Verified](screenshots/07_azure_sql_tables_verified.png.png)
 
 ### Azure Data Factory Pipeline Success
 
-![ADF Pipeline Success](screenshots/08_adf_pipeline_success.png)
+![ADF Pipeline Success](screenshots/08_adf_pipeline_success.png.png)
 
 ## Key Project Outcomes
 
@@ -123,6 +123,22 @@ Shows average delivery days and order volume by customer state.
 - Automated notebook execution using Azure Data Factory.
 - Built Power BI dashboards for sales, product, and delivery insights.
 
-## Security Note
+## Repository Structure
 
-Sensitive credentials such as storage keys, SQL passwords, and Databricks access tokens are not included in this repository.
+```text
+azure-olist-ecommerce-pipeline
+│
+├── docs
+│   └── project_summary.md
+│
+├── notebooks
+│   └── nb_olist_transformation.py
+│
+├── power bi
+│   └── Power BI dashboard file
+│
+├── screenshots
+│   └── Project screenshots and pipeline evidence
+│
+├── .gitignore
+└── README.md
