@@ -142,3 +142,8 @@ azure-olist-ecommerce-pipeline
 │
 ├── .gitignore
 └── README.md
+```
+
+## Security Note
+
+Sensitive credentials such as storage keys, SQL passwords, and Databricks access tokens are not included in this repository.
