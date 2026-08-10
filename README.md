@@ -66,6 +66,11 @@ Main datasets used:
 - Reviews
 - Sellers
 - Product Category Translation
+## Dataset Source
+
+The project uses the Brazilian E-Commerce Public Dataset by Olist, available on Kaggle:
+
+[Olist Brazilian E-Commerce Dataset](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
 ## Project Workflow
 
