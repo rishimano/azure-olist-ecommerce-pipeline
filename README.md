@@ -6,6 +6,15 @@ This project demonstrates an end-to-end cloud data engineering and analytics pip
 
 The goal of this project was to build a practical data pipeline covering data ingestion, transformation, orchestration, SQL loading, and business reporting.
 
+## Key Results
+
+- Processed 99K+ customer orders
+- Built a fact table with 112K+ order-item records
+- Created 5 analytics-ready tables
+- Stored curated data in Parquet format
+- Automated the pipeline with Azure Data Factory
+- Built Power BI dashboards for sales, products, and delivery
+
 ## Architecture
 ```mermaid
 flowchart TD
