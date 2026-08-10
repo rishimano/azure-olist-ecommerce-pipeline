@@ -8,13 +8,17 @@ The goal of this project was to build a practical data pipeline covering data in
 
 ## Architecture
 
-Olist CSV Dataset  
-→ Azure Data Lake Storage Gen2 Raw Container  
-→ Azure Data Factory Pipeline  
-→ Azure Databricks PySpark Transformation  
-→ Azure Data Lake Storage Gen2 Curated Container  
-→ Azure SQL Database  
-→ Power BI Dashboard  
+
+```mermaid
+flowchart LR
+    A[Olist CSV Dataset] --> B[Azure Data Lake Storage Gen2 - Raw]
+    B --> C[Azure Data Factory]
+    C --> D[Azure Databricks]
+    D --> E[PySpark Data Transformation]
+    E --> F[ADLS Gen2 - Curated Parquet]
+    F --> G[Azure SQL Database]
+    G --> H[Power BI Dashboard]
+```
 
 ## Tools and Technologies
 
