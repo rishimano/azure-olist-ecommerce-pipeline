@@ -1,0 +1,37 @@
+# Project Summary
+
+## Project Title
+
+End-to-End Azure E-Commerce Analytics Pipeline using ADF, Databricks, Azure SQL and Power BI
+
+## Objective
+
+The objective of this project was to build a complete cloud-based data engineering and analytics pipeline using Azure services. The pipeline transforms raw e-commerce CSV data into curated analytical tables and business dashboards.
+
+## Dataset
+
+The project used the Brazilian Olist e-commerce dataset, including orders, customers, sellers, products, payments, reviews, and product category translation data.
+
+## Pipeline Design
+
+1. Raw CSV files were uploaded into Azure Data Lake Storage Gen2.
+2. Azure Databricks was used to clean, transform, and join the datasets using PySpark.
+3. Curated outputs were saved in Parquet format.
+4. Final fact and summary tables were loaded into Azure SQL Database using JDBC.
+5. Azure Data Factory orchestrated the Databricks notebook execution.
+6. Power BI connected to Azure SQL Database to create business dashboards.
+
+## Business Insights Covered
+
+- Total revenue
+- Total orders
+- Average order value
+- Freight cost
+- Average delivery days
+- Revenue by state
+- Product category performance
+- Delivery performance by state
+
+## Final Output
+
+The final output includes Azure SQL tables, curated Parquet files, Power BI dashboards, and Azure pipeline execution evidence.

@@ -1,0 +1,292 @@
+# Databricks notebook source
+# Project: End-to-End Azure E-Commerce Analytics Pipeline
+# Dataset: Olist Brazilian E-Commerce Dataset
+# Tools: ADLS Gen2, Databricks, PySpark, Azure SQL, ADF, Power BI
+
+# COMMAND ----------
+
+from pyspark.sql.functions import (
+    col,
+    to_date,
+    datediff,
+    year,
+    month,
+    sum as spark_sum,
+    countDistinct,
+    round,
+    avg
+)
+
+# COMMAND ----------
+
+# Azure Data Lake Storage configuration
+# Replace placeholders with your own values when running.
+# Do not upload real keys/passwords to GitHub.
+
+storage_account = "YOUR_STORAGE_ACCOUNT_NAME"
+container_raw = "raw"
+container_curated = "curated"
+storage_key = "YOUR_STORAGE_ACCOUNT_KEY"
+
+spark.conf.set(
+    f"fs.azure.account.key.{storage_account}.dfs.core.windows.net",
+    storage_key
+)
+
+raw_path = f"abfss://{container_raw}@{storage_account}.dfs.core.windows.net/"
+curated_path = f"abfss://{container_curated}@{storage_account}.dfs.core.windows.net/"
+
+# COMMAND ----------
+
+# Load raw CSV files from ADLS Gen2
+
+orders_df = spark.read.csv(f"{raw_path}olist_orders_dataset.csv", header=True, inferSchema=True)
+order_items_df = spark.read.csv(f"{raw_path}olist_order_items_dataset.csv", header=True, inferSchema=True)
+customers_df = spark.read.csv(f"{raw_path}olist_customers_dataset.csv", header=True, inferSchema=True)
+products_df = spark.read.csv(f"{raw_path}olist_products_dataset.csv", header=True, inferSchema=True)
+payments_df = spark.read.csv(f"{raw_path}olist_order_payments_dataset.csv", header=True, inferSchema=True)
+reviews_df = spark.read.csv(f"{raw_path}olist_order_reviews_dataset.csv", header=True, inferSchema=True)
+sellers_df = spark.read.csv(f"{raw_path}olist_sellers_dataset.csv", header=True, inferSchema=True)
+category_translation_df = spark.read.csv(f"{raw_path}product_category_name_translation.csv", header=True, inferSchema=True)
+
+print("All main datasets loaded successfully")
+
+# COMMAND ----------
+
+# Check raw row counts
+
+print(f"Orders: {orders_df.count()}")
+print(f"Order Items: {order_items_df.count()}")
+print(f"Customers: {customers_df.count()}")
+print(f"Products: {products_df.count()}")
+print(f"Payments: {payments_df.count()}")
+print(f"Reviews: {reviews_df.count()}")
+print(f"Sellers: {sellers_df.count()}")
+print(f"Category Translation: {category_translation_df.count()}")
+
+# COMMAND ----------
+
+# Clean orders table
+
+orders_clean_df = orders_df.dropDuplicates(["order_id"]) \
+    .withColumn("order_purchase_date", to_date(col("order_purchase_timestamp"))) \
+    .withColumn("order_delivered_date", to_date(col("order_delivered_customer_date"))) \
+    .withColumn("order_estimated_delivery_date", to_date(col("order_estimated_delivery_date"))) \
+    .withColumn("delivery_days", datediff(col("order_delivered_date"), col("order_purchase_date"))) \
+    .withColumn("late_delivery_days", datediff(col("order_delivered_date"), col("order_estimated_delivery_date")))
+
+# COMMAND ----------
+
+# Clean supporting tables
+
+order_items_clean_df = order_items_df.dropDuplicates() \
+    .withColumn("price", col("price").cast("double")) \
+    .withColumn("freight_value", col("freight_value").cast("double"))
+
+customers_clean_df = customers_df.dropDuplicates(["customer_id"])
+products_clean_df = products_df.dropDuplicates(["product_id"])
+sellers_clean_df = sellers_df.dropDuplicates(["seller_id"])
+
+payments_clean_df = payments_df.dropDuplicates() \
+    .withColumn("payment_value", col("payment_value").cast("double")) \
+    .withColumn("payment_installments", col("payment_installments").cast("int"))
+
+reviews_clean_df = reviews_df.dropDuplicates(["review_id"]) \
+    .withColumn("review_score", col("review_score").cast("int"))
+
+category_translation_clean_df = category_translation_df.dropDuplicates(["product_category_name"])
+
+print("Datasets cleaned successfully")
+
+# COMMAND ----------
+
+# Enrich products with English category names
+
+products_enriched_df = products_clean_df.join(
+    category_translation_clean_df,
+    on="product_category_name",
+    how="left"
+)
+
+# COMMAND ----------
+
+# Create fact table
+
+fact_orders_df = order_items_clean_df \
+    .join(orders_clean_df, on="order_id", how="left") \
+    .join(customers_clean_df, on="customer_id", how="left") \
+    .join(products_enriched_df, on="product_id", how="left") \
+    .join(sellers_clean_df, on="seller_id", how="left")
+
+fact_orders_final_df = fact_orders_df.select(
+    "order_id",
+    "order_item_id",
+    "customer_id",
+    "seller_id",
+    "product_id",
+    "order_status",
+    "order_purchase_date",
+    "order_delivered_date",
+    "order_estimated_delivery_date",
+    "delivery_days",
+    "late_delivery_days",
+    "customer_city",
+    "customer_state",
+    "seller_city",
+    "seller_state",
+    "product_category_name",
+    "product_category_name_english",
+    "price",
+    "freight_value"
+)
+
+print(f"Fact table rows: {fact_orders_final_df.count()}")
+
+# COMMAND ----------
+
+# Create monthly sales summary
+
+monthly_sales_summary_df = fact_orders_final_df.groupBy(
+    year("order_purchase_date").alias("sales_year"),
+    month("order_purchase_date").alias("sales_month")
+).agg(
+    round(spark_sum("price"), 2).alias("total_revenue"),
+    countDistinct("order_id").alias("total_orders"),
+    round(avg("price"), 2).alias("average_item_value")
+).orderBy("sales_year", "sales_month")
+
+# COMMAND ----------
+
+# Create sales by state summary
+
+sales_by_state_df = fact_orders_final_df.groupBy(
+    "customer_state"
+).agg(
+    round(spark_sum("price"), 2).alias("total_revenue"),
+    countDistinct("order_id").alias("total_orders"),
+    round(avg("price"), 2).alias("average_item_value")
+).orderBy(col("total_revenue").desc())
+
+# COMMAND ----------
+
+# Create product category performance summary
+
+category_performance_df = fact_orders_final_df.groupBy(
+    "product_category_name_english"
+).agg(
+    round(spark_sum("price"), 2).alias("total_revenue"),
+    countDistinct("order_id").alias("total_orders"),
+    round(avg("price"), 2).alias("average_item_value"),
+    round(avg("delivery_days"), 2).alias("average_delivery_days")
+).orderBy(col("total_revenue").desc())
+
+# COMMAND ----------
+
+# Create delivery performance summary
+
+delivery_performance_df = fact_orders_final_df.groupBy(
+    "customer_state"
+).agg(
+    round(avg("delivery_days"), 2).alias("average_delivery_days"),
+    round(avg("late_delivery_days"), 2).alias("average_late_delivery_days"),
+    countDistinct("order_id").alias("total_orders")
+).orderBy(col("average_delivery_days").desc())
+
+# COMMAND ----------
+
+# Save curated outputs as Parquet files in ADLS Gen2
+
+fact_orders_final_df.write.mode("overwrite").parquet(f"{curated_path}fact_orders")
+monthly_sales_summary_df.write.mode("overwrite").parquet(f"{curated_path}monthly_sales_summary")
+sales_by_state_df.write.mode("overwrite").parquet(f"{curated_path}sales_by_state")
+category_performance_df.write.mode("overwrite").parquet(f"{curated_path}category_performance")
+delivery_performance_df.write.mode("overwrite").parquet(f"{curated_path}delivery_performance")
+
+print("Curated Parquet tables saved successfully")
+
+# COMMAND ----------
+
+# Azure SQL Database configuration
+# Replace placeholders with your own values when running.
+# Do not upload real passwords to GitHub.
+
+sql_server = "YOUR_SQL_SERVER_NAME.database.windows.net"
+sql_database = "YOUR_SQL_DATABASE_NAME"
+sql_username = "YOUR_SQL_USERNAME"
+sql_password = "YOUR_SQL_PASSWORD"
+
+jdbc_url = (
+    f"jdbc:sqlserver://{sql_server}:1433;"
+    f"database={sql_database};"
+    "encrypt=true;"
+    "trustServerCertificate=false;"
+    "hostNameInCertificate=*.database.windows.net;"
+    "loginTimeout=30;"
+)
+
+connection_properties = {
+    "user": sql_username,
+    "password": sql_password,
+    "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+}
+
+# COMMAND ----------
+
+# Write final tables to Azure SQL Database
+
+monthly_sales_summary_df.write.jdbc(
+    url=jdbc_url,
+    table="monthly_sales_summary",
+    mode="overwrite",
+    properties=connection_properties
+)
+
+sales_by_state_df.write.jdbc(
+    url=jdbc_url,
+    table="sales_by_state",
+    mode="overwrite",
+    properties=connection_properties
+)
+
+category_performance_df.write.jdbc(
+    url=jdbc_url,
+    table="category_performance",
+    mode="overwrite",
+    properties=connection_properties
+)
+
+delivery_performance_df.write.jdbc(
+    url=jdbc_url,
+    table="delivery_performance",
+    mode="overwrite",
+    properties=connection_properties
+)
+
+fact_orders_final_df.write.jdbc(
+    url=jdbc_url,
+    table="fact_orders",
+    mode="overwrite",
+    properties=connection_properties
+)
+
+print("All tables written to Azure SQL Database successfully")
+
+# COMMAND ----------
+
+# Verify final SQL table row counts
+
+tables = [
+    "monthly_sales_summary",
+    "sales_by_state",
+    "category_performance",
+    "delivery_performance",
+    "fact_orders"
+]
+
+for table in tables:
+    df = spark.read.jdbc(
+        url=jdbc_url,
+        table=table,
+        properties=connection_properties
+    )
+    print(f"{table}: {df.count()} rows")
